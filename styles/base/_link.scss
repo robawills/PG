@@ -1,0 +1,25 @@
+@use '@/styles/mixins' as *;
+
+/* Base Link Styles */
+
+button {
+  all: initial;
+}
+
+a,
+button {
+  color: var(--color-fg-interactive);
+  outline: none;
+  text-decoration: none;
+  transition: color var(--animation-speed-fast) ease-in-out;
+
+  &:hover,
+  &:active,
+  &:focus {
+    color: var(--color-fg-interactive-hover);
+  }
+
+  &:focus-visible {
+    @include a11y-focus-box-shadow;
+  }
+}

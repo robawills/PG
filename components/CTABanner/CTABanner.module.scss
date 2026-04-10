@@ -1,0 +1,63 @@
+@use '@/styles/mixins' as *;
+
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--color-border-primary);
+
+  @include breakpoint(m) {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 640px;
+}
+
+.signpost {
+  font-weight: 600;
+  font-size: clamp(0.875rem, 0.845rem + 0.129vw, 1rem);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--color-fg-secondary);
+}
+
+.heading {
+  font-weight: 400;
+  font-size: clamp(1.75rem, 1.204rem + 2.33vw, 4rem);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-stack);
+  font-weight: 500;
+  font-size: clamp(0.875rem, 0.845rem + 0.129vw, 1rem);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-neutral-100);
+  background-color: var(--color-neutral-900);
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-4);
+  transition:
+    background-color var(--animation-speed-fast) ease,
+    color var(--animation-speed-fast) ease;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: var(--color-neutral-700);
+    color: var(--color-neutral-100);
+  }
+}

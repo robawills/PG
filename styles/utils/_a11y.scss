@@ -1,0 +1,5 @@
+@use '@/styles/mixins' as *;
+
+.u-srOnly {
+  @include sr-only;
+}
