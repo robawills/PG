@@ -1,4 +1,7 @@
+import classNames from 'classnames/bind';
 import styles from './TextBlock.module.scss';
+
+const cx = classNames.bind(styles);
 
 interface TextBlockProps {
   signpost?: string;
@@ -8,12 +11,12 @@ interface TextBlockProps {
 
 export default function TextBlock({ signpost, heading, body }: TextBlockProps) {
   return (
-    <section className={styles.section}>
-      <div className={styles.inner}>
-        {signpost && <span className={styles.signpost}>{signpost}</span>}
-        <h2 className={styles.heading}>{heading}</h2>
+    <section className={cx('section')}>
+      <div className={cx('inner')}>
+        {signpost && <span className={cx('signpost')}>{signpost}</span>}
+        <h2 className={cx('heading')}>{heading}</h2>
       </div>
-      <p className={styles.body}>{body}</p>
+      <p className={cx('body')}>{body}</p>
     </section>
   );
 }

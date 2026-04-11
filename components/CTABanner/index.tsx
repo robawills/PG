@@ -1,4 +1,7 @@
+import classNames from 'classnames/bind';
 import styles from './CTABanner.module.scss';
+
+const cx = classNames.bind(styles);
 
 interface CTABannerProps {
   signpost?: string;
@@ -14,12 +17,12 @@ export default function CTABanner({
   href,
 }: CTABannerProps) {
   return (
-    <section className={styles.section}>
-      <div className={styles.inner}>
-        {signpost && <span className={styles.signpost}>{signpost}</span>}
-        <h2 className={styles.heading}>{heading}</h2>
+    <section className={cx('section')}>
+      <div className={cx('inner')}>
+        {signpost && <span className={cx('signpost')}>{signpost}</span>}
+        <h2 className={cx('heading')}>{heading}</h2>
       </div>
-      <a href={href} className={styles.button}>
+      <a href={href} className={cx('button')}>
         {buttonText}
       </a>
     </section>

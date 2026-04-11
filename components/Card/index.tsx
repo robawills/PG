@@ -1,5 +1,8 @@
 import Image from 'next/image';
+import classNames from 'classnames/bind';
 import styles from './Card.module.scss';
+
+const cx = classNames.bind(styles);
 
 interface CardProps {
   image: {
@@ -22,10 +25,10 @@ export default function Card({
   linkText,
 }: CardProps) {
   return (
-    <a href={href} className={styles.card} data-row-type="card-block">
-      <div className={styles.imageWrap}>
+    <a href={href} className={cx('card')} data-row-type="card-block">
+      <div className={cx('imageWrap')}>
         <Image
-          className={styles.image}
+          className={cx('image')}
           src={image.src}
           alt={image.alt}
           width={image.width}
@@ -33,13 +36,13 @@ export default function Card({
           sizes="(max-width: 768px) 100vw, 33vw"
         />
       </div>
-      <div className={styles.content}>
-        {description && <p className={styles.description}>{description}</p>}
-        <h3 className={styles.heading}>{heading}</h3>
-        <span className={styles.link}>
+      <div className={cx('content')}>
+        {description && <p className={cx('description')}>{description}</p>}
+        <h3 className={cx('heading')}>{heading}</h3>
+        <span className={cx('link')}>
           {linkText}
           <svg
-            className={styles.arrow}
+            className={cx('arrow')}
             width="16"
             height="16"
             viewBox="0 0 16 16"

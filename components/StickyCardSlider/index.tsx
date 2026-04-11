@@ -2,9 +2,13 @@ import Image from "next/image";
 import { useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
+import { SplitText } from "gsap/dist/SplitText";
+import classNames from "classnames/bind";
 import styles from "./StickyCardSlider.module.scss";
 
-gsap.registerPlugin(ScrollTrigger);
+const cx = classNames.bind(styles);
+
+gsap.registerPlugin(ScrollTrigger, SplitText);
 
 export interface StickyCardSliderItem {
   anchor: string;
@@ -32,19 +36,82 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
   const linkRef = useRef<HTMLAnchorElement>(null);
   const textIndexRef = useRef(0);
   const textTlRef = useRef<gsap.core.Timeline | null>(null);
+  const splitRef = useRef<SplitText | null>(null);
+  const hasPlayedIntro = useRef(false);
 
   useEffect(() => {
     if (!wrapperRef.current || !cardRef.current || items.length < 2) return;
 
-    // Set initial states
+    // Set initial states — hide all text content for intro animation
+    const firstInner = innerRef.current[0];
+    if (firstInner) {
+      gsap.set(firstInner, { opacity: 1 });
+      // Hide description and link; heading will be split
+      const desc = firstInner.querySelector(`.${styles.description}`);
+      const link = firstInner.querySelector(`.${styles.link}`);
+      if (desc) gsap.set(desc, { opacity: 0, y: 4 });
+      if (link) gsap.set(link, { opacity: 0, y: 4 });
+    }
+
+    // Hide all non-first panels
+    innerRef.current.forEach((el, i) => {
+      if (!el || i === 0) return;
+      gsap.set(el, { opacity: 0 });
+    });
+
     imagesRef.current.forEach((el, i) => {
       if (!el || i === 0) return;
       gsap.set(el, { clipPath: "inset(100% 0 0 0 round var(--radius-3))" });
     });
 
+    // Split the first heading into lines with mask wrappers
+    const firstHeading = firstInner?.querySelector(`.${styles.heading}`);
+    if (firstHeading) {
+      splitRef.current = new SplitText(firstHeading, {
+        type: "lines",
+        linesClass: "line-inner",
+        mask: "lines",
+        maskClass: "line-mask",
+      });
+      // Start lines translated down (hidden by mask overflow)
+      gsap.set(splitRef.current.lines, { yPercent: 110 });
+    }
+
     const ctx = gsap.context(() => {
       const totalPanels = items.length;
       const transitions = totalPanels - 1;
+
+      // Intro animation: lines reveal then content fades in
+      const introTl = gsap.timeline({
+        onComplete: () => {
+          hasPlayedIntro.current = true;
+        },
+      });
+
+      if (splitRef.current) {
+        introTl.to(splitRef.current.lines, {
+          yPercent: 0,
+          duration: 1.2,
+          stagger: 0.2,
+          ease: "power3.out",
+        });
+      }
+
+      // After lines are in, fade in description + link
+      if (firstInner) {
+        const desc = firstInner.querySelector(`.${styles.description}`);
+        const link = firstInner.querySelector(`.${styles.link}`);
+        const fadeTargets = [desc, link].filter(Boolean);
+        if (fadeTargets.length) {
+          introTl.to(fadeTargets, {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            stagger: 0.2,
+            ease: "power3.out",
+          }, "-=0.4");
+        }
+      }
 
       // Build a single master timeline for all image reveals
       const tl = gsap.timeline();
@@ -102,32 +169,25 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
         }
       }
 
-      // Calculate end so the card fills the wrapper exactly when it unpins
+      // Card sticks via CSS sticky; ScrollTrigger only drives the animation
       const cardHeight = cardRef.current!.offsetHeight;
-      const endOffset = cardHeight + 80; // card height + margin-top
-
-      // Pin and scrub the timeline to scroll
-      ScrollTrigger.create({
-        trigger: wrapperRef.current,
-        start: "top 80px",
-        end: `bottom ${endOffset}px`,
-        pin: cardRef.current,
-        pinSpacing: false,
-        scrub: 1,
-        animation: tl,
-      });
+      const endOffset = cardHeight + 80; // card height + sticky top
 
       // Text switching based on scroll progress
       const switchText = (newIndex: number) => {
         const prev = textIndexRef.current;
         if (newIndex === prev) return;
 
-        const isLast = newIndex === totalPanels - 1;
-
         // Kill any in-progress text timeline
         if (textTlRef.current) {
           textTlRef.current.kill();
           textTlRef.current = null;
+        }
+
+        // Revert SplitText on first heading when leaving panel 0
+        if (prev === 0 && splitRef.current) {
+          splitRef.current.revert();
+          splitRef.current = null;
         }
 
         // Force-reset all layers to their correct state immediately
@@ -166,10 +226,13 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
         textIndexRef.current = newIndex;
       };
 
+      // Single ScrollTrigger: scrubs the image timeline + switches text
       ScrollTrigger.create({
         trigger: wrapperRef.current,
         start: "top 80px",
         end: `bottom ${endOffset}px`,
+        scrub: 1,
+        animation: tl,
         onUpdate: (self) => {
           const tlProgress = self.progress;
           const tlDuration = tl.duration();
@@ -199,6 +262,7 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
 
     return () => {
       if (textTlRef.current) textTlRef.current.kill();
+      if (splitRef.current) splitRef.current.revert();
       ctx.revert();
     };
   }, [items]);
@@ -206,24 +270,24 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
   return (
     <div
       ref={wrapperRef}
-      className={styles.wrapper}
+      className={cx('wrapper')}
       style={{ height: `${items.length * 80}vh` }}
     >
-      <div ref={cardRef} className={styles.card} data-row-type="card-block">
+      <div ref={cardRef} className={cx('card')} data-row-type="card-block">
         {/* Stacked images — each revealed via scrubbed clip-path */}
-        <div className={styles.imageWrap}>
+        <div className={cx('imageWrap')}>
           {items.map((item, i) => (
             <div
               key={item.anchor}
               ref={(el) => {
                 imagesRef.current[i] = el;
               }}
-              className={styles.imageLayer}
+              className={cx('imageLayer')}
               style={{ zIndex: i }}
             >
-              <div className={styles.imageInner}>
+              <div className={cx('imageInner')}>
                 <Image
-                  className={styles.image}
+                  className={cx('image')}
                   src={item.image.src}
                   alt={item.image.alt}
                   width={item.image.width}
@@ -237,24 +301,24 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
         </div>
 
         {/* White content panel */}
-        <a ref={linkRef} href={items[0].href} className={styles.content}>
+        <a ref={linkRef} href={items[0].href} className={cx('content')}>
           {items.map((item, i) => (
             <div
               key={item.anchor}
               ref={(el) => {
                 innerRef.current[i] = el;
               }}
-              className={styles.inner}
+              className={cx('inner')}
               style={{ opacity: i === 0 ? 1 : 0 }}
             >
               {item.description && (
-                <p className={styles.description}>{item.description}</p>
+                <p className={cx('description')}>{item.description}</p>
               )}
-              <h3 className={styles.heading}>{item.heading}</h3>
-              <span className={styles.link}>
+              <h3 className={cx('heading')}>{item.heading}</h3>
+              <span className={cx('link')}>
                 {item.linkText}
                 <svg
-                  className={styles.arrow}
+                  className={cx('arrow')}
                   width="16"
                   height="16"
                   viewBox="0 0 16 16"

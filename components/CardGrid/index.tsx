@@ -1,5 +1,8 @@
 import { ReactNode } from 'react';
+import classNames from 'classnames/bind';
 import styles from './CardGrid.module.scss';
+
+const cx = classNames.bind(styles);
 
 interface CardGridProps {
   children: ReactNode;
@@ -9,14 +12,14 @@ interface CardGridProps {
 
 export default function CardGrid({ children, signpost, heading }: CardGridProps) {
   return (
-    <section className={styles.section}>
+    <section className={cx('section')}>
       {(signpost || heading) && (
-        <div className={styles.header}>
-          {signpost && <span className={styles.signpost}>{signpost}</span>}
-          {heading && <h2 className={styles.heading}>{heading}</h2>}
+        <div className={cx('header')}>
+          {signpost && <span className={cx('signpost')}>{signpost}</span>}
+          {heading && <h2 className={cx('heading')}>{heading}</h2>}
         </div>
       )}
-      <div className={styles.grid}>{children}</div>
+      <div className={cx('grid')}>{children}</div>
     </section>
   );
 }
