@@ -49,8 +49,8 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
       // Hide description and link; heading will be split
       const desc = firstInner.querySelector(`.${styles.description}`);
       const link = firstInner.querySelector(`.${styles.link}`);
-      if (desc) gsap.set(desc, { opacity: 0, y: 4 });
-      if (link) gsap.set(link, { opacity: 0, y: 4 });
+      if (desc) gsap.set(desc, { opacity: 0 });
+      if (link) gsap.set(link, { opacity: 0 });
     }
 
     // Hide all non-first panels
@@ -105,7 +105,6 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
         if (fadeTargets.length) {
           introTl.to(fadeTargets, {
             opacity: 1,
-            y: 0,
             duration: 0.8,
             stagger: 0.2,
             ease: "power3.out",
@@ -311,10 +310,10 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
               className={cx('inner')}
               style={{ opacity: i === 0 ? 1 : 0 }}
             >
+              <h3 className={cx('heading')}>{item.heading}</h3>
               {item.description && (
                 <p className={cx('description')}>{item.description}</p>
               )}
-              <h3 className={cx('heading')}>{item.heading}</h3>
               <span className={cx('link')}>
                 {item.linkText}
                 <svg
