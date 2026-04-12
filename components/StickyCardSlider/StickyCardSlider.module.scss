@@ -2,6 +2,8 @@
 
 .wrapper {
   // Height set inline: items.length * 80vh
+  // Creates a named view timeline that children reference
+  view-timeline: --slider block;
 }
 
 .card {
@@ -22,16 +24,36 @@
   background-color: #000;
 }
 
+// Each image layer uses CSS custom property --i for its index
+// and --total-items to calculate its animation range
 .imageLayer {
   position: absolute;
   inset: 0;
-  will-change: clip-path;
+
+  // Non-first layers: reveal via clip-path
+  &:not(:first-child) {
+    clip-path: inset(100% 0 0 0 round var(--radius-3));
+    animation: image-reveal linear both;
+    animation-timeline: --slider;
+    animation-range:
+      calc((var(--i) - 1) / var(--total-items) * 100%)
+      calc(var(--i) / var(--total-items) * 100%);
+  }
 }
 
+// Fade-out lives on imageInner to avoid overriding the clip-path
+// animation on the same element
 .imageInner {
   position: absolute;
   inset: -3%;
-  will-change: transform;
+
+  .imageLayer:not(:last-child) > & {
+    animation: image-fade-out linear both;
+    animation-timeline: --slider;
+    animation-range:
+      calc((var(--i) + 0.7) / var(--total-items) * 100%)
+      calc((var(--i) + 1) / var(--total-items) * 100%);
+  }
 }
 
 .image {
@@ -41,7 +63,7 @@
   object-fit: cover;
 }
 
-// White overlay panel — same as Card design
+// White overlay panel
 .content {
   position: absolute;
   bottom: var(--space-6);
@@ -53,8 +75,26 @@
   background-color: var(--color-neutral-100);
   border-radius: var(--radius-2);
   box-shadow: 0 4px 24px rgb(0 0 0 / 0.12);
-  text-decoration: none;
   color: var(--color-neutral-900);
+
+  @include breakpoint(m) {
+    bottom: var(--space-9);
+    left: var(--space-9);
+    right: unset;
+    max-width: 340px;
+    padding: var(--space-6) var(--space-7);
+  }
+}
+
+// All inner layers occupy the same grid cell
+// Each uses --i and --total-items for its animation-range
+.inner {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: inherit;
   cursor: pointer;
 
   &:hover,
@@ -68,22 +108,34 @@
     @include a11y-focus-box-shadow;
   }
 
-  @include breakpoint(m) {
-    bottom: var(--space-9);
-    left: var(--space-9);
-    right: unset;
-    max-width: 340px;
-    padding: var(--space-6) var(--space-7);
+  // First panel: visible, fades out at its transition
+  &:first-child {
+    animation: text-fade-out linear both;
+    animation-timeline: --slider;
+    animation-range:
+      calc(0.6 / var(--total-items) * 100%)
+      calc(1 / var(--total-items) * 100%);
   }
-}
 
-// All inner layers occupy the same grid cell
-.inner {
-  grid-area: 1 / 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  will-change: opacity, transform;
+  // Middle panels: fade in, hold, fade out
+  &:not(:first-child):not(:last-child) {
+    opacity: 0;
+    animation: text-fade-in-out linear both;
+    animation-timeline: --slider;
+    animation-range:
+      calc((var(--i) - 0.4) / var(--total-items) * 100%)
+      calc((var(--i) + 0.6) / var(--total-items) * 100%);
+  }
+
+  // Last panel: fades in and stays
+  &:last-child {
+    opacity: 0;
+    animation: text-fade-in linear both;
+    animation-timeline: --slider;
+    animation-range:
+      calc((var(--i) - 0.4) / var(--total-items) * 100%)
+      calc(var(--i) / var(--total-items) * 100%);
+  }
 }
 
 .description {
@@ -103,17 +155,6 @@
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: var(--color-neutral-900);
-
-  // SplitText line masks
-  :global(.line-mask) {
-    overflow: hidden;
-    display: block;
-  }
-
-  :global(.line-inner) {
-    display: block;
-    will-change: transform;
-  }
 }
 
 .link {
@@ -130,4 +171,64 @@
   width: 16px;
   height: 16px;
   transition: transform var(--animation-speed-fast) var(--animation-easing-1);
+}
+
+// Keyframes
+
+@keyframes image-reveal {
+  from {
+    clip-path: inset(100% 0 0 0 round var(--radius-3));
+  }
+
+  to {
+    clip-path: inset(0% 0 0 0 round var(--radius-3));
+  }
+}
+
+@keyframes image-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.3;
+  }
+}
+
+@keyframes text-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes text-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes text-fade-in-out {
+  0% {
+    opacity: 0;
+  }
+
+  25% {
+    opacity: 1;
+  }
+
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
