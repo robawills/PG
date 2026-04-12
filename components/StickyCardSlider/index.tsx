@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 import { SplitText } from "gsap/dist/SplitText";
@@ -29,6 +29,7 @@ interface StickyCardSliderProps {
 }
 
 export default function StickyCardSlider({ items }: StickyCardSliderProps) {
+  const [jsReady, setJsReady] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<(HTMLDivElement | null)[]>([]);
@@ -40,6 +41,11 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
   const hasPlayedIntro = useRef(false);
 
   useEffect(() => {
+    setJsReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!jsReady) return;
     if (!wrapperRef.current || !cardRef.current || items.length < 2) return;
 
     // Set initial states — hide all text content for intro animation
@@ -310,7 +316,59 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
       if (splitRef.current) splitRef.current.revert();
       ctx.revert();
     };
-  }, [items]);
+  }, [jsReady, items]);
+
+  if (!jsReady) {
+    // No-JS fallback: full-width stacked cards
+    return (
+      <div className={cx("fallback")}>
+        {items.map((item) => (
+          <a
+            key={item.anchor}
+            href={item.href}
+            className={cx("fallbackCard")}
+            data-row-type="card-block"
+          >
+            <div className={cx("fallbackImageWrap")}>
+              <Image
+                className={cx("image")}
+                src={item.image.src}
+                alt={item.image.alt}
+                width={item.image.width}
+                height={item.image.height}
+                sizes="100vw"
+              />
+            </div>
+            <div className={cx("fallbackContent")}>
+              <h3 className={cx("heading")}>{item.heading}</h3>
+              {item.description && (
+                <p className={cx("description")}>{item.description}</p>
+              )}
+              <span className={cx("link")}>
+                {item.linkText}
+                <svg
+                  className={cx("arrow")}
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M6 3l5 5-5 5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div

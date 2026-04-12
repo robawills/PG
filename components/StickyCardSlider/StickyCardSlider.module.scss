@@ -131,3 +131,65 @@
   height: 16px;
   transition: transform var(--animation-speed-fast) var(--animation-easing-1);
 }
+
+// No-JS fallback: stacked single column
+.fallback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.fallbackCard {
+  position: relative;
+  display: block;
+  border-radius: var(--radius-3);
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  color: var(--color-neutral-900);
+  text-decoration: none;
+
+  &:hover,
+  &:focus {
+    .arrow {
+      transform: translateX(3px);
+    }
+  }
+
+  &:focus-visible {
+    @include a11y-focus-box-shadow;
+  }
+}
+
+.fallbackImageWrap {
+  position: absolute;
+  inset: 0;
+
+  .image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.fallbackContent {
+  position: absolute;
+  bottom: var(--space-6);
+  left: var(--space-6);
+  right: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-6);
+  background-color: var(--color-neutral-100);
+  border-radius: var(--radius-2);
+  box-shadow: 0 4px 24px rgb(0 0 0 / 0.12);
+
+  @include breakpoint(m) {
+    bottom: var(--space-9);
+    left: var(--space-9);
+    right: unset;
+    max-width: 340px;
+    padding: var(--space-6) var(--space-7);
+  }
+}
