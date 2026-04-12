@@ -81,8 +81,9 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
       const totalPanels = items.length;
       const transitions = totalPanels - 1;
 
-      // Intro animation: lines reveal then content fades in
+      // Intro animation: plays when the card scrolls into view
       const introTl = gsap.timeline({
+        paused: true,
         onComplete: () => {
           hasPlayedIntro.current = true;
         },
@@ -103,14 +104,25 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
         const link = firstInner.querySelector(`.${styles.link}`);
         const fadeTargets = [desc, link].filter(Boolean);
         if (fadeTargets.length) {
-          introTl.to(fadeTargets, {
-            opacity: 1,
-            duration: 0.8,
-            stagger: 0.2,
-            ease: "power3.out",
-          }, "-=0.4");
+          introTl.to(
+            fadeTargets,
+            {
+              opacity: 1,
+              duration: 0.8,
+              ease: "power3.out",
+            },
+            "-=0.8",
+          );
         }
       }
+
+      // Trigger intro when the content panel enters the viewport
+      ScrollTrigger.create({
+        trigger: cardRef.current!.querySelector(`.${styles.content}`),
+        start: "top 95%",
+        once: true,
+        onEnter: () => introTl.play(),
+      });
 
       // Build a single master timeline for all image reveals
       const tl = gsap.timeline();
@@ -148,7 +160,11 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
         tl.fromTo(
           incoming,
           { clipPath: "inset(100% 0 0 0 round var(--radius-3))" },
-          { clipPath: "inset(0% 0 0 0 round var(--radius-3))", ease: "none", duration: 1 },
+          {
+            clipPath: "inset(0% 0 0 0 round var(--radius-3))",
+            ease: "none",
+            duration: 1,
+          },
           pos,
         );
 
@@ -183,8 +199,8 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
           textTlRef.current = null;
         }
 
-        // Revert SplitText on first heading when leaving panel 0
-        if (prev === 0 && splitRef.current) {
+        // Revert any previous SplitText
+        if (splitRef.current) {
           splitRef.current.revert();
           splitRef.current = null;
         }
@@ -192,29 +208,59 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
         // Force-reset all layers to their correct state immediately
         innerRef.current.forEach((el, j) => {
           if (!el) return;
-          const children = el.children;
           if (j === newIndex) {
-            // Active: make wrapper visible, children will animate in
             gsap.set(el, { opacity: 1 });
-            gsap.set(children, { opacity: 0, y: 4 });
+            // Hide heading (will be split) and fade targets
+            const heading = el.querySelector(`.${styles.heading}`);
+            const desc = el.querySelector(`.${styles.description}`);
+            const link = el.querySelector(`.${styles.link}`);
+            if (heading) gsap.set(heading, { opacity: 0 });
+            if (desc) gsap.set(desc, { opacity: 0 });
+            if (link) gsap.set(link, { opacity: 0 });
           } else {
-            // Inactive: fully hidden
             gsap.set(el, { opacity: 0 });
-            gsap.set(children, { opacity: 0 });
           }
         });
 
-        // Build a new timeline for the stagger-in
+        // Build a new timeline: split heading lines, then fade rest
         const enterTl = gsap.timeline();
         const activeInner = innerRef.current[newIndex];
         if (activeInner) {
-          enterTl.to(activeInner.children, {
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            stagger: 0.18,
-            ease: "power3.out",
-          });
+          const heading = activeInner.querySelector(`.${styles.heading}`);
+          const desc = activeInner.querySelector(`.${styles.description}`);
+          const link = activeInner.querySelector(`.${styles.link}`);
+
+          // Split and mask-reveal the heading
+          if (heading) {
+            gsap.set(heading, { opacity: 1 });
+            splitRef.current = new SplitText(heading, {
+              type: "lines",
+              linesClass: "line-inner",
+              mask: "lines",
+              maskClass: "line-mask",
+            });
+            gsap.set(splitRef.current.lines, { yPercent: 110 });
+            enterTl.to(splitRef.current.lines, {
+              yPercent: 0,
+              duration: 1.2,
+              stagger: 0.2,
+              ease: "power3.out",
+            });
+          }
+
+          // Fade in description + link (no y movement)
+          const fadeTargets = [desc, link].filter(Boolean);
+          if (fadeTargets.length) {
+            enterTl.to(
+              fadeTargets,
+              {
+                opacity: 1,
+                duration: 0.8,
+                ease: "power3.out",
+              },
+              "-=0.8",
+            );
+          }
         }
         textTlRef.current = enterTl;
 
@@ -269,24 +315,24 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
   return (
     <div
       ref={wrapperRef}
-      className={cx('wrapper')}
+      className={cx("wrapper")}
       style={{ height: `${items.length * 80}vh` }}
     >
-      <div ref={cardRef} className={cx('card')} data-row-type="card-block">
+      <div ref={cardRef} className={cx("card")} data-row-type="card-block">
         {/* Stacked images — each revealed via scrubbed clip-path */}
-        <div className={cx('imageWrap')}>
+        <div className={cx("imageWrap")}>
           {items.map((item, i) => (
             <div
               key={item.anchor}
               ref={(el) => {
                 imagesRef.current[i] = el;
               }}
-              className={cx('imageLayer')}
+              className={cx("imageLayer")}
               style={{ zIndex: i }}
             >
-              <div className={cx('imageInner')}>
+              <div className={cx("imageInner")}>
                 <Image
-                  className={cx('image')}
+                  className={cx("image")}
                   src={item.image.src}
                   alt={item.image.alt}
                   width={item.image.width}
@@ -299,25 +345,24 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
           ))}
         </div>
 
-        {/* White content panel */}
-        <a ref={linkRef} href={items[0].href} className={cx('content')}>
+        <a ref={linkRef} href={items[0].href} className={cx("content")}>
           {items.map((item, i) => (
             <div
               key={item.anchor}
               ref={(el) => {
                 innerRef.current[i] = el;
               }}
-              className={cx('inner')}
+              className={cx("inner")}
               style={{ opacity: i === 0 ? 1 : 0 }}
             >
-              <h3 className={cx('heading')}>{item.heading}</h3>
+              <h3 className={cx("heading")}>{item.heading}</h3>
               {item.description && (
-                <p className={cx('description')}>{item.description}</p>
+                <p className={cx("description")}>{item.description}</p>
               )}
-              <span className={cx('link')}>
+              <span className={cx("link")}>
                 {item.linkText}
                 <svg
-                  className={cx('arrow')}
+                  className={cx("arrow")}
                   width="16"
                   height="16"
                   viewBox="0 0 16 16"
