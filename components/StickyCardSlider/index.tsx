@@ -28,6 +28,36 @@ interface StickyCardSliderProps {
   items: StickyCardSliderItem[];
 }
 
+function CardContent({ item }: { item: StickyCardSliderItem }) {
+  return (
+    <>
+      <h3 className={cx("heading")}>{item.heading}</h3>
+      {item.description && (
+        <p className={cx("description")}>{item.description}</p>
+      )}
+      <span className={cx("link")}>
+        {item.linkText}
+        <svg
+          className={cx("arrow")}
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M6 3l5 5-5 5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    </>
+  );
+}
+
 export default function StickyCardSlider({ items }: StickyCardSliderProps) {
   const [jsReady, setJsReady] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -319,17 +349,12 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
   }, [jsReady, items]);
 
   if (!jsReady) {
-    // No-JS fallback: full-width stacked cards
+    // No-JS fallback: stacked cards reusing the same classes
     return (
       <div className={cx("fallback")}>
         {items.map((item) => (
-          <a
-            key={item.anchor}
-            href={item.href}
-            className={cx("fallbackCard")}
-            data-row-type="card-block"
-          >
-            <div className={cx("fallbackImageWrap")}>
+          <div key={item.anchor} className={cx("card")} data-row-type="card-block">
+            <div className={cx("imageWrap")}>
               <Image
                 className={cx("image")}
                 src={item.image.src}
@@ -339,32 +364,34 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
                 sizes="100vw"
               />
             </div>
-            <div className={cx("fallbackContent")}>
-              <h3 className={cx("heading")}>{item.heading}</h3>
-              {item.description && (
-                <p className={cx("description")}>{item.description}</p>
-              )}
-              <span className={cx("link")}>
-                {item.linkText}
-                <svg
-                  className={cx("arrow")}
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M6 3l5 5-5 5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </div>
-          </a>
+            <a href={item.href} className={cx("content")}>
+              <div className={cx("inner")}>
+                <h3 className={cx("heading")}>{item.heading}</h3>
+                {item.description && (
+                  <p className={cx("description")}>{item.description}</p>
+                )}
+                <span className={cx("link")}>
+                  {item.linkText}
+                  <svg
+                    className={cx("arrow")}
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 3l5 5-5 5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </div>
+            </a>
+          </div>
         ))}
       </div>
     );
@@ -413,29 +440,7 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
               className={cx("inner")}
               style={{ opacity: i === 0 ? 1 : 0 }}
             >
-              <h3 className={cx("heading")}>{item.heading}</h3>
-              {item.description && (
-                <p className={cx("description")}>{item.description}</p>
-              )}
-              <span className={cx("link")}>
-                {item.linkText}
-                <svg
-                  className={cx("arrow")}
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M6 3l5 5-5 5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
+              <CardContent item={item} />
             </div>
           ))}
         </a>
