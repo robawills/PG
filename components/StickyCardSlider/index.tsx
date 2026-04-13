@@ -60,11 +60,43 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
       className={cx("wrapper")}
       style={
         {
-          "--total-items": total,
+          "--total-items": total + 1.25,
           "--wrapper-height": `${total * 80}vh`,
         } as React.CSSProperties
       }
     >
+      {/* Fallback: individual cards shown when scroll-driven animations unsupported */}
+      <div className={cx("fallback")}>
+        {items.map((item) => (
+          <div
+            key={item.anchor}
+            className={cx("fallbackCard")}
+            data-row-type="card-block"
+          >
+            <div className={cx("imageWrap")}>
+              <div className={cx("imageLayer")}>
+                <div className={cx("imageInner")}>
+                  <Image
+                    className={cx("image")}
+                    src={item.image.src}
+                    alt={item.image.alt}
+                    width={item.image.width}
+                    height={item.image.height}
+                    sizes="100vw"
+                  />
+                </div>
+              </div>
+            </div>
+            <a href={item.href} className={cx("content")}>
+              <div className={cx("inner")}>
+                <CardContent item={item} />
+              </div>
+            </a>
+          </div>
+        ))}
+      </div>
+
+      {/* Enhanced: single sticky card with scroll-driven animations */}
       <div className={cx("card")} data-row-type="card-block">
         <div className={cx("imageWrap")}>
           {items.map((item, i) => (

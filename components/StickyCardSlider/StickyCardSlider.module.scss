@@ -1,23 +1,8 @@
 @use "@/styles/mixins" as *;
 
 // ──────────────────────────────────────────────
-// Base styles: stacked single-column fallback
-// Used when scroll-driven animations are not supported
+// Shared styles
 // ──────────────────────────────────────────────
-
-.wrapper {
-  display: grid;
-  grid-template-columns: 1fr;
-  row-gap: var(--space-6);
-}
-
-.card {
-  position: relative;
-  display: block;
-  border-radius: var(--radius-3);
-  overflow: hidden;
-  aspect-ratio: 16 / 9;
-}
 
 .imageWrap {
   position: absolute;
@@ -28,11 +13,6 @@
 .imageLayer {
   position: absolute;
   inset: 0;
-
-  // In fallback mode, only show the first image per card
-  &:not(:first-child) {
-    display: none;
-  }
 }
 
 .imageInner {
@@ -53,14 +33,12 @@
   left: var(--space-6);
   right: var(--space-6);
   z-index: var(--zindex-layer-1);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
   padding: var(--space-5) var(--space-6);
   background-color: var(--color-neutral-100);
   border-radius: var(--radius-2);
   box-shadow: 0 4px 24px rgb(0 0 0 / 0.12);
   color: var(--color-neutral-900);
+  text-decoration: none;
 
   @include breakpoint(m) {
     bottom: var(--space-9);
@@ -78,11 +56,6 @@
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-
-  // In fallback mode, only show the first text panel
-  &:not(:first-child) {
-    display: none;
-  }
 
   &:hover,
   &:focus {
@@ -132,10 +105,37 @@
 }
 
 // ──────────────────────────────────────────────
+// Fallback: single-column grid of individual cards
+// Shown by default, hidden when scroll-driven animations supported
+// ──────────────────────────────────────────────
+
+.fallback {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: var(--space-6);
+}
+
+.fallbackCard {
+  position: relative;
+  border-radius: var(--radius-3);
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+// Enhanced layout hidden by default
+.card {
+  display: none;
+}
+
+// ──────────────────────────────────────────────
 // Enhanced: scroll-driven animation layout
 // ──────────────────────────────────────────────
 
 @supports (animation-timeline: view()) {
+  .fallback {
+    display: none;
+  }
+
   .wrapper {
     display: block;
     height: var(--wrapper-height);
@@ -143,33 +143,34 @@
   }
 
   .card {
+    display: block;
     position: sticky;
     top: 80px;
+    border-radius: var(--radius-3);
+    overflow: hidden;
     height: 80vh;
-    min-height: 500px;
     width: 100%;
-    aspect-ratio: auto;
   }
 
+  // Image transitions: each non-first layer reveals during its slot
+  // Slot 0 = hold on first card, slot 1 = transition to second, etc.
   .imageLayer {
     &:not(:first-child) {
-      display: block;
       clip-path: inset(100% 0 0 0 round var(--radius-3));
       animation: image-reveal linear both;
       animation-timeline: --slider;
-      animation-range:
-        calc((var(--i) - 1) / var(--total-items) * 100%)
-        calc(var(--i) / var(--total-items) * 100%);
+      animation-range: calc(var(--i) / var(--total-items) * 100%)
+        calc((var(--i) + 1) / var(--total-items) * 100%);
     }
   }
 
+  // Fade-out on the outgoing image's inner (avoids animation conflict)
   .imageInner {
     .imageLayer:not(:last-child) > & {
       animation: image-fade-out linear both;
       animation-timeline: --slider;
-      animation-range:
-        calc((var(--i) + 0.7) / var(--total-items) * 100%)
-        calc((var(--i) + 1) / var(--total-items) * 100%);
+      animation-range: calc((var(--i) + 1 + 0.7) / var(--total-items) * 100%)
+        calc((var(--i) + 2) / var(--total-items) * 100%);
     }
   }
 
@@ -177,40 +178,35 @@
     display: grid;
   }
 
+  // Text panels: quick crossfade at each image transition midpoint
   .inner {
     grid-area: 1 / 1;
 
-    &:not(:first-child) {
-      display: flex;
-    }
-
-    // First panel: visible, fades out at its transition
+    // First panel: quick fade out halfway through the first image transition
     &:first-child {
       animation: text-fade-out linear both;
       animation-timeline: --slider;
-      animation-range:
-        calc(0.6 / var(--total-items) * 100%)
-        calc(1 / var(--total-items) * 100%);
+      animation-range: calc(1.4 / var(--total-items) * 100%)
+        calc(1.6 / var(--total-items) * 100%);
     }
 
-    // Middle panels: fade in, hold, fade out
+    // Middle panels: quick fade in, hold, quick fade out
     &:not(:first-child):not(:last-child) {
       opacity: 0;
       animation: text-fade-in-out linear both;
       animation-timeline: --slider;
-      animation-range:
-        calc((var(--i) - 0.4) / var(--total-items) * 100%)
-        calc((var(--i) + 0.6) / var(--total-items) * 100%);
+      // 10% fade in, 80% hold, 10% fade out
+      animation-range: calc((var(--i) + 0.4) / var(--total-items) * 100%)
+        calc((var(--i) + 1.6) / var(--total-items) * 100%);
     }
 
-    // Last panel: fades in and stays
+    // Last panel: quick fade in and stays visible
     &:last-child {
       opacity: 0;
-      animation: text-fade-in linear both;
+      animation: text-fade-in linear forwards;
       animation-timeline: --slider;
-      animation-range:
-        calc((var(--i) - 0.4) / var(--total-items) * 100%)
-        calc(var(--i) / var(--total-items) * 100%);
+      animation-range: calc((var(--i) + 0.4) / var(--total-items) * 100%)
+        calc((var(--i) + 0.6) / var(--total-items) * 100%);
     }
   }
 }
