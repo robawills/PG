@@ -1,9 +1,21 @@
 @use "@/styles/mixins" as *;
 
-// ──────────────────────────────────────────────
-// Shared styles
-// ──────────────────────────────────────────────
+.wrapper {
+  // Height set inline: items.length * 80vh
+}
 
+.card {
+  position: sticky;
+  top: 80px;
+  display: block;
+  border-radius: var(--radius-3);
+  overflow: hidden;
+  height: 80vh;
+  min-height: 500px;
+  width: 100%;
+}
+
+// Image stack — layers stacked by z-index, revealed via clip-path
 .imageWrap {
   position: absolute;
   inset: 0;
@@ -13,11 +25,13 @@
 .imageLayer {
   position: absolute;
   inset: 0;
+  will-change: clip-path;
 }
 
 .imageInner {
   position: absolute;
   inset: -3%;
+  will-change: transform;
 }
 
 .image {
@@ -27,34 +41,20 @@
   object-fit: cover;
 }
 
+// White overlay panel — same as Card design
 .content {
   position: absolute;
   bottom: var(--space-6);
   left: var(--space-6);
   right: var(--space-6);
   z-index: var(--zindex-layer-1);
+  display: grid;
   padding: var(--space-5) var(--space-6);
   background-color: var(--color-neutral-100);
   border-radius: var(--radius-2);
   box-shadow: 0 4px 24px rgb(0 0 0 / 0.12);
+  text-decoration: none;
   color: var(--color-neutral-900);
-  text-decoration: none;
-
-  @include breakpoint(m) {
-    bottom: var(--space-9);
-    left: var(--space-9);
-    right: unset;
-    max-width: 340px;
-    padding: var(--space-6) var(--space-7);
-  }
-}
-
-.inner {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  text-decoration: none;
-  color: inherit;
   cursor: pointer;
 
   &:hover,
@@ -67,6 +67,23 @@
   &:focus-visible {
     @include a11y-focus-box-shadow;
   }
+
+  @include breakpoint(m) {
+    bottom: var(--space-9);
+    left: var(--space-9);
+    right: unset;
+    max-width: 340px;
+    padding: var(--space-6) var(--space-7);
+  }
+}
+
+// All inner layers occupy the same grid cell
+.inner {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  will-change: opacity, transform;
 }
 
 .description {
@@ -86,6 +103,17 @@
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: var(--color-neutral-900);
+
+  // SplitText line masks
+  :global(.line-mask) {
+    overflow: hidden;
+    display: block;
+  }
+
+  :global(.line-inner) {
+    display: block;
+    will-change: transform;
+  }
 }
 
 .link {
@@ -104,169 +132,27 @@
   transition: transform var(--animation-speed-fast) var(--animation-easing-1);
 }
 
-// ──────────────────────────────────────────────
-// Fallback: single-column grid of individual cards
-// Shown by default, hidden when scroll-driven animations supported
-// ──────────────────────────────────────────────
-
+// No-JS fallback: stacked single column
 .fallback {
-  display: grid;
-  grid-template-columns: 1fr;
-  row-gap: var(--space-6);
-}
-
-.fallbackCard {
-  position: relative;
-  border-radius: var(--radius-3);
-  overflow: hidden;
-  aspect-ratio: 16 / 9;
-}
-
-// Enhanced layout hidden by default
-.card {
-  display: none;
-}
-
-// ──────────────────────────────────────────────
-// Enhanced: scroll-driven animation layout
-// ──────────────────────────────────────────────
-
-@supports (animation-timeline: view()) {
-  .fallback {
-    display: none;
-  }
-
-  .wrapper {
-    display: block;
-    height: var(--wrapper-height);
-    view-timeline: --slider block;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
 
   .card {
-    display: block;
-    position: sticky;
-    top: 80px;
-    border-radius: var(--radius-3);
-    overflow: hidden;
-    height: 80vh;
-    width: 100%;
-  }
-
-  // Image transitions: each non-first layer reveals during its slot
-  // Slot 0 = hold on first card, slot 1 = transition to second, etc.
-  .imageLayer {
-    &:not(:first-child) {
-      clip-path: inset(100% 0 0 0 round var(--radius-3));
-      animation: image-reveal linear both;
-      animation-timeline: --slider;
-      animation-range: calc(var(--i) / var(--total-items) * 100%)
-        calc((var(--i) + 1) / var(--total-items) * 100%);
-    }
-  }
-
-  // Fade-out on the outgoing image's inner (avoids animation conflict)
-  .imageInner {
-    .imageLayer:not(:last-child) > & {
-      animation: image-fade-out linear both;
-      animation-timeline: --slider;
-      animation-range: calc((var(--i) + 1 + 0.7) / var(--total-items) * 100%)
-        calc((var(--i) + 2) / var(--total-items) * 100%);
-    }
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: auto;
+    aspect-ratio: 16 / 9;
   }
 
   .content {
-    display: grid;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
   }
 
-  // Text panels: quick crossfade at each image transition midpoint
   .inner {
-    grid-area: 1 / 1;
-
-    // First panel: quick fade out halfway through the first image transition
-    &:first-child {
-      animation: text-fade-out linear both;
-      animation-timeline: --slider;
-      animation-range: calc(1.4 / var(--total-items) * 100%)
-        calc(1.6 / var(--total-items) * 100%);
-    }
-
-    // Middle panels: quick fade in, hold, quick fade out
-    &:not(:first-child):not(:last-child) {
-      opacity: 0;
-      animation: text-fade-in-out linear both;
-      animation-timeline: --slider;
-      // 10% fade in, 80% hold, 10% fade out
-      animation-range: calc((var(--i) + 0.4) / var(--total-items) * 100%)
-        calc((var(--i) + 1.6) / var(--total-items) * 100%);
-    }
-
-    // Last panel: quick fade in and stays visible
-    &:last-child {
-      opacity: 0;
-      animation: text-fade-in linear forwards;
-      animation-timeline: --slider;
-      animation-range: calc((var(--i) + 0.4) / var(--total-items) * 100%)
-        calc((var(--i) + 0.6) / var(--total-items) * 100%);
-    }
-  }
-}
-
-// Keyframes
-
-@keyframes image-reveal {
-  from {
-    clip-path: inset(100% 0 0 0 round var(--radius-3));
-  }
-
-  to {
-    clip-path: inset(0% 0 0 0 round var(--radius-3));
-  }
-}
-
-@keyframes image-fade-out {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0.3;
-  }
-}
-
-@keyframes text-fade-out {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes text-fade-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes text-fade-in-out {
-  0% {
-    opacity: 0;
-  }
-
-  25% {
-    opacity: 1;
-  }
-
-  75% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
+    grid-area: auto;
   }
 }
