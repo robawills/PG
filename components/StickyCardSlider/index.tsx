@@ -364,7 +364,7 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
       const transitions = items.length - 1;
       const tlDuration = transitions + (transitions - 1) * 0.3;
       const accumulated = (i - 1) * 1.3;
-      const progress = (accumulated + 0.75) / tlDuration;
+      const progress = (accumulated + 1) / tlDuration;
       window.scrollTo({
         top: scrollStart + totalRange * progress,
         behavior: "smooth",
