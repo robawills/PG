@@ -61,7 +61,7 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
       style={
         {
           "--total-items": total,
-          height: `${total * 80}vh`,
+          "--wrapper-height": `${total * 80}vh`,
         } as React.CSSProperties
       }
     >

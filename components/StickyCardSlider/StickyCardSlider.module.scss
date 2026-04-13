@@ -1,59 +1,43 @@
 @use "@/styles/mixins" as *;
 
+// ──────────────────────────────────────────────
+// Base styles: stacked single-column fallback
+// Used when scroll-driven animations are not supported
+// ──────────────────────────────────────────────
+
 .wrapper {
-  // Height set inline: items.length * 80vh
-  // Creates a named view timeline that children reference
-  view-timeline: --slider block;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
 }
 
 .card {
-  position: sticky;
-  top: 80px;
+  position: relative;
   display: block;
   border-radius: var(--radius-3);
   overflow: hidden;
-  height: 80vh;
-  min-height: 500px;
-  width: 100%;
+  aspect-ratio: 16 / 9;
 }
 
-// Image stack — layers stacked by z-index, revealed via clip-path
 .imageWrap {
   position: absolute;
   inset: 0;
   background-color: #000;
 }
 
-// Each image layer uses CSS custom property --i for its index
-// and --total-items to calculate its animation range
 .imageLayer {
   position: absolute;
   inset: 0;
 
-  // Non-first layers: reveal via clip-path
+  // In fallback mode, only show the first image per card
   &:not(:first-child) {
-    clip-path: inset(100% 0 0 0 round var(--radius-3));
-    animation: image-reveal linear both;
-    animation-timeline: --slider;
-    animation-range:
-      calc((var(--i) - 1) / var(--total-items) * 100%)
-      calc(var(--i) / var(--total-items) * 100%);
+    display: none;
   }
 }
 
-// Fade-out lives on imageInner to avoid overriding the clip-path
-// animation on the same element
 .imageInner {
   position: absolute;
   inset: -3%;
-
-  .imageLayer:not(:last-child) > & {
-    animation: image-fade-out linear both;
-    animation-timeline: --slider;
-    animation-range:
-      calc((var(--i) + 0.7) / var(--total-items) * 100%)
-      calc((var(--i) + 1) / var(--total-items) * 100%);
-  }
 }
 
 .image {
@@ -63,14 +47,15 @@
   object-fit: cover;
 }
 
-// White overlay panel
 .content {
   position: absolute;
   bottom: var(--space-6);
   left: var(--space-6);
   right: var(--space-6);
   z-index: var(--zindex-layer-1);
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-5) var(--space-6);
   background-color: var(--color-neutral-100);
   border-radius: var(--radius-2);
@@ -86,16 +71,18 @@
   }
 }
 
-// All inner layers occupy the same grid cell
-// Each uses --i and --total-items for its animation-range
 .inner {
-  grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+
+  // In fallback mode, only show the first text panel
+  &:not(:first-child) {
+    display: none;
+  }
 
   &:hover,
   &:focus {
@@ -106,35 +93,6 @@
 
   &:focus-visible {
     @include a11y-focus-box-shadow;
-  }
-
-  // First panel: visible, fades out at its transition
-  &:first-child {
-    animation: text-fade-out linear both;
-    animation-timeline: --slider;
-    animation-range:
-      calc(0.6 / var(--total-items) * 100%)
-      calc(1 / var(--total-items) * 100%);
-  }
-
-  // Middle panels: fade in, hold, fade out
-  &:not(:first-child):not(:last-child) {
-    opacity: 0;
-    animation: text-fade-in-out linear both;
-    animation-timeline: --slider;
-    animation-range:
-      calc((var(--i) - 0.4) / var(--total-items) * 100%)
-      calc((var(--i) + 0.6) / var(--total-items) * 100%);
-  }
-
-  // Last panel: fades in and stays
-  &:last-child {
-    opacity: 0;
-    animation: text-fade-in linear both;
-    animation-timeline: --slider;
-    animation-range:
-      calc((var(--i) - 0.4) / var(--total-items) * 100%)
-      calc(var(--i) / var(--total-items) * 100%);
   }
 }
 
@@ -171,6 +129,90 @@
   width: 16px;
   height: 16px;
   transition: transform var(--animation-speed-fast) var(--animation-easing-1);
+}
+
+// ──────────────────────────────────────────────
+// Enhanced: scroll-driven animation layout
+// ──────────────────────────────────────────────
+
+@supports (animation-timeline: view()) {
+  .wrapper {
+    display: block;
+    height: var(--wrapper-height);
+    view-timeline: --slider block;
+  }
+
+  .card {
+    position: sticky;
+    top: 80px;
+    height: 80vh;
+    min-height: 500px;
+    width: 100%;
+    aspect-ratio: auto;
+  }
+
+  .imageLayer {
+    &:not(:first-child) {
+      display: block;
+      clip-path: inset(100% 0 0 0 round var(--radius-3));
+      animation: image-reveal linear both;
+      animation-timeline: --slider;
+      animation-range:
+        calc((var(--i) - 1) / var(--total-items) * 100%)
+        calc(var(--i) / var(--total-items) * 100%);
+    }
+  }
+
+  .imageInner {
+    .imageLayer:not(:last-child) > & {
+      animation: image-fade-out linear both;
+      animation-timeline: --slider;
+      animation-range:
+        calc((var(--i) + 0.7) / var(--total-items) * 100%)
+        calc((var(--i) + 1) / var(--total-items) * 100%);
+    }
+  }
+
+  .content {
+    display: grid;
+  }
+
+  .inner {
+    grid-area: 1 / 1;
+
+    &:not(:first-child) {
+      display: flex;
+    }
+
+    // First panel: visible, fades out at its transition
+    &:first-child {
+      animation: text-fade-out linear both;
+      animation-timeline: --slider;
+      animation-range:
+        calc(0.6 / var(--total-items) * 100%)
+        calc(1 / var(--total-items) * 100%);
+    }
+
+    // Middle panels: fade in, hold, fade out
+    &:not(:first-child):not(:last-child) {
+      opacity: 0;
+      animation: text-fade-in-out linear both;
+      animation-timeline: --slider;
+      animation-range:
+        calc((var(--i) - 0.4) / var(--total-items) * 100%)
+        calc((var(--i) + 0.6) / var(--total-items) * 100%);
+    }
+
+    // Last panel: fades in and stays
+    &:last-child {
+      opacity: 0;
+      animation: text-fade-in linear both;
+      animation-timeline: --slider;
+      animation-range:
+        calc((var(--i) - 0.4) / var(--total-items) * 100%)
+        calc(var(--i) / var(--total-items) * 100%);
+    }
+  }
 }
 
 // Keyframes
