@@ -3,8 +3,10 @@ import Hero from "@/components/Hero";
 import TextBlock from "@/components/TextBlock";
 import StatsBar from "@/components/StatsBar";
 import StickyCardSlider from "@/components/StickyCardSlider";
+import CSSCardCarousel from "@/components/CSSCardCarousel";
 import CTABanner from "@/components/CTABanner";
 import type { StickyCardSliderItem } from "@/components/StickyCardSlider";
+import type { CSSCardCarouselItem } from "@/components/CSSCardCarousel";
 
 const features: StickyCardSliderItem[] = [
   {
@@ -109,6 +111,8 @@ export default function Home() {
       />
 
       <StickyCardSlider items={features} />
+
+      <CSSCardCarousel items={features} />
 
       <TextBlock
         signpost="Inventore"
