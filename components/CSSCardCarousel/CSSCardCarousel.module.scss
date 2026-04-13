@@ -178,6 +178,19 @@
     display: grid;
   }
 
+  // When any text panel has keyboard focus, disable all scroll-driven text
+  // animations and hide every panel, then show only the focused one.
+  // Works without JavaScript.
+  .content:has(.inner:focus-visible) .inner {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+
+  .content:has(.inner:focus-visible) .inner:focus-visible {
+    opacity: 1 !important;
+    z-index: 1;
+  }
+
   // Text panels: quick crossfade at each image transition midpoint
   .inner {
     grid-area: 1 / 1;
@@ -207,6 +220,26 @@
       animation-timeline: --slider;
       animation-range: calc((var(--i) + 0.4) / var(--total-items) * 100%)
         calc((var(--i) + 0.6) / var(--total-items) * 100%);
+    }
+  }
+
+  // CSS-only image switching on keyboard focus — works without JavaScript.
+  // When a text panel receives focus, disable scroll-driven image animations
+  // and reveal/hide image layers so the background matches the focused card.
+  @for $n from 1 through 10 {
+    .card:has(.inner:nth-child(#{$n}):focus-visible) {
+      .imageLayer,
+      .imageInner {
+        animation: none !important;
+      }
+
+      .imageLayer:nth-child(-n + #{$n}) {
+        clip-path: inset(0 0 0 0 round var(--radius-3)) !important;
+      }
+
+      .imageLayer:nth-child(n + #{$n + 1}) {
+        clip-path: inset(100% 0 0 0 round var(--radius-3)) !important;
+      }
     }
   }
 }
