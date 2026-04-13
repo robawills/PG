@@ -1,3 +1,4 @@
+import { useRef, useCallback } from "react";
 import Image from "next/image";
 import classNames from "classnames/bind";
 import styles from "./CSSCardCarousel.module.scss";
@@ -54,13 +55,33 @@ function CardContent({ item }: { item: CSSCardCarouselItem }) {
 
 export default function CSSCardCarousel({ items }: CSSCardCarouselProps) {
   const total = items.length;
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const totalItems = total + 1.25;
+
+  const scrollToCard = useCallback(
+    (i: number) => {
+      const wrapper = wrapperRef.current;
+      if (!wrapper) return;
+      // view-timeline progress: 0% = wrapper enters viewport, 100% = exits
+      // Total scroll range = wrapper height + viewport height
+      const wrapperTop = wrapper.getBoundingClientRect().top + window.scrollY;
+      const scrollRange = wrapper.offsetHeight + window.innerHeight;
+      const targetProgress = (i + 0.75) / totalItems;
+      window.scrollTo({
+        top: wrapperTop - window.innerHeight + scrollRange * targetProgress,
+        behavior: "smooth",
+      });
+    },
+    [totalItems],
+  );
 
   return (
     <div
+      ref={wrapperRef}
       className={cx("wrapper")}
       style={
         {
-          "--total-items": total + 1.25,
+          "--total-items": totalItems,
           "--wrapper-height": `${total * 80}vh`,
         } as React.CSSProperties
       }
@@ -132,6 +153,7 @@ export default function CSSCardCarousel({ items }: CSSCardCarouselProps) {
               href={item.href}
               className={cx("inner")}
               style={{ "--i": i } as React.CSSProperties}
+              onFocus={() => scrollToCard(i)}
             >
               <CardContent item={item} />
             </a>

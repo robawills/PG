@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 import { SplitText } from "gsap/dist/SplitText";
@@ -63,8 +63,7 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<(HTMLDivElement | null)[]>([]);
-  const innerRef = useRef<(HTMLDivElement | null)[]>([]);
-  const linkRef = useRef<HTMLAnchorElement>(null);
+  const innerRef = useRef<(HTMLAnchorElement | null)[]>([]);
   const textIndexRef = useRef(0);
   const textTlRef = useRef<gsap.core.Timeline | null>(null);
   const splitRef = useRef<SplitText | null>(null);
@@ -300,10 +299,6 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
         }
         textTlRef.current = enterTl;
 
-        if (linkRef.current) {
-          linkRef.current.href = items[newIndex].href;
-        }
-
         textIndexRef.current = newIndex;
       };
 
@@ -347,6 +342,36 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
       ctx.revert();
     };
   }, [jsReady, items]);
+
+  const scrollToCard = useCallback(
+    (i: number) => {
+      const wrapper = wrapperRef.current;
+      const card = cardRef.current;
+      if (!wrapper || !card) return;
+      const wrapperTop = wrapper.getBoundingClientRect().top + window.scrollY;
+      const cardHeight = card.offsetHeight;
+      // ScrollTrigger range: start = "top 80px", end = "bottom (cardHeight+80)px"
+      const scrollStart = wrapperTop - 80;
+      const scrollEnd = wrapperTop + wrapper.offsetHeight - cardHeight - 80;
+      const totalRange = scrollEnd - scrollStart;
+
+      if (i === 0) {
+        window.scrollTo({ top: scrollStart, behavior: "smooth" });
+        return;
+      }
+
+      // Match the timeline progress where switchText triggers card i
+      const transitions = items.length - 1;
+      const tlDuration = transitions + (transitions - 1) * 0.3;
+      const accumulated = (i - 1) * 1.3;
+      const progress = (accumulated + 0.75) / tlDuration;
+      window.scrollTo({
+        top: scrollStart + totalRange * progress,
+        behavior: "smooth",
+      });
+    },
+    [items.length],
+  );
 
   if (!jsReady) {
     // No-JS fallback: stacked cards reusing the same classes
@@ -430,20 +455,22 @@ export default function StickyCardSlider({ items }: StickyCardSliderProps) {
           ))}
         </div>
 
-        <a ref={linkRef} href={items[0].href} className={cx("content")}>
+        <div className={cx("content")}>
           {items.map((item, i) => (
-            <div
+            <a
               key={item.anchor}
+              href={item.href}
               ref={(el) => {
                 innerRef.current[i] = el;
               }}
               className={cx("inner")}
               style={{ opacity: i === 0 ? 1 : 0 }}
+              onFocus={() => scrollToCard(i)}
             >
               <CardContent item={item} />
-            </div>
+            </a>
           ))}
-        </a>
+        </div>
       </div>
     </div>
   );

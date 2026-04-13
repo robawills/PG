@@ -110,7 +110,19 @@ export default function Home() {
         ]}
       />
 
+      <TextBlock
+        signpost="Version 1"
+        heading="GSAP Sticky Card Slider"
+        body="Scroll-driven card transitions powered by GSAP and ScrollTrigger."
+      />
+
       <StickyCardSlider items={features} />
+
+      <TextBlock
+        signpost="Version 2"
+        heading="CSS Card Carousel"
+        body="Pure CSS scroll-driven animations using animation-timeline, with a fallback for unsupported browsers."
+      />
 
       <CSSCardCarousel items={features} />
 
